@@ -38,11 +38,9 @@ $parameters = $urlMatcher->match($requestUri);
 
 // Configure Twig Engine
 $loader = new FilesystemLoader(__DIR__ . '/views');
-$twig = new Environment($loader, [
-    'cache' => __DIR__ . '/cache/views'
-]);
+$twig = new Environment($loader, []);
 
-// Calling Specific Controller from Routing
+// Calling Specific Controller action from Routing
 $controllerClass = $parameters['_controller'][0];
 $controllerMethod = $parameters['_controller'][1];
 $controller = new $controllerClass($twig);
