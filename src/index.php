@@ -6,9 +6,11 @@ use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 // Register Autoloader for application files following PSR-4
-spl_autoload_register(function($class) {
+spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/';
     $len = strlen($prefix);
@@ -24,7 +26,7 @@ spl_autoload_register(function($class) {
 
 // Configure Routing
 $home = new Route('/', [
-    '_controller' => [HomeController::class, 'showHome'], 
+    '_controller' => [HomeController::class, 'showHome'],
     '_methods' => 'GET'
 ]);
 $routes = new RouteCollection();
@@ -34,13 +36,18 @@ $urlMatcher = new UrlMatcher($routes, $context);
 $requestUri = $_SERVER['REQUEST_URI'];
 $parameters = $urlMatcher->match($requestUri);
 
+// Configure Twig Engine
+$loader = new FilesystemLoader(__DIR__ . '/views');
+$twig = new Environment($loader, [
+    'cache' => __DIR__ . '/cache/views'
+]);
+
 // Calling Specific Controller from Routing
 $controllerClass = $parameters['_controller'][0];
 $controllerMethod = $parameters['_controller'][1];
-$controller = new $controllerClass();
+$controller = new $controllerClass($twig);
 
 if (method_exists($controller, $controllerMethod) && is_callable([$controller, $controllerMethod])) {
-    $controller->$controllerMethod();
+    $response = $controller->$controllerMethod();
+    echo $response;
 }
-?>
-
