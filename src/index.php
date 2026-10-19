@@ -1,7 +1,9 @@
 <?php
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Config;
 use App\Controller\HomeController;
+use Dotenv\Dotenv;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\Route;
@@ -24,6 +26,21 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// Reserved global functions
+require __DIR__ . '/functions.php';
+
+// Load Configuration
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+$appConfig = require __DIR__ . '/config/app.php';
+
+Config::init(['app' => $appConfig]);
+
+// Configure Twig Engine
+$loader = new FilesystemLoader(__DIR__ . '/views');
+$twig = new Environment($loader, []);
+
 // Configure Routing
 $home = new Route('/', [
     '_controller' => [HomeController::class, 'showHome'],
@@ -35,10 +52,6 @@ $context = new RequestContext();
 $urlMatcher = new UrlMatcher($routes, $context);
 $requestUri = $_SERVER['REQUEST_URI'];
 $parameters = $urlMatcher->match($requestUri);
-
-// Configure Twig Engine
-$loader = new FilesystemLoader(__DIR__ . '/views');
-$twig = new Environment($loader, []);
 
 // Calling Specific Controller action from Routing
 $controllerClass = $parameters['_controller'][0];

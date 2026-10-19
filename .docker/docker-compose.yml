@@ -61,6 +61,7 @@ services:
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
     volumes:
       - ../src:/var/www/html
+      - ../.env:/var/www/html/.env
       - ../vendor:/var/www/vendor
     ports:
       - "${APP_PORT:-8080}:80"
