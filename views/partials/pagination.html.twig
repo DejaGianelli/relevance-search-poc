@@ -1,0 +1,50 @@
+{#
+    Expects:
+      pagination: { page, pages, total, from, to }
+      base_url:   URL the "?page=N" query string is appended to
+#}
+{% set page = pagination.page %}
+{% set pages = pagination.pages %}
+{% set window = 2 %}
+{% set link_class = 'inline-flex min-w-9 items-center justify-center rounded-md px-3 py-1.5 text-sm' %}
+
+<nav aria-label="Pagination" class="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+    <p class="text-sm text-gray-500">
+        Showing <span class="font-medium text-gray-900">{{ pagination.from }}</span>–<span class="font-medium text-gray-900">{{ pagination.to }}</span>
+        of <span class="font-medium text-gray-900">{{ pagination.total }}</span>
+    </p>
+
+    {% if pages > 1 %}
+        <ul class="flex flex-wrap items-center gap-1">
+            <li>
+                {% if page > 1 %}
+                    <a href="{{ base_url }}?page={{ page - 1 }}" rel="prev" class="{{ link_class }} text-gray-600 hover:bg-gray-100">&larr; Prev</a>
+                {% else %}
+                    <span class="{{ link_class }} text-gray-300">&larr; Prev</span>
+                {% endif %}
+            </li>
+
+            {% for n in 1..pages %}
+                {% if n == 1 or n == pages or (n >= page - window and n <= page + window) %}
+                    <li>
+                        {% if n == page %}
+                            <span aria-current="page" class="{{ link_class }} bg-gray-900 font-medium text-white">{{ n }}</span>
+                        {% else %}
+                            <a href="{{ base_url }}?page={{ n }}" class="{{ link_class }} text-gray-600 hover:bg-gray-100">{{ n }}</a>
+                        {% endif %}
+                    </li>
+                {% elseif n == page - window - 1 or n == page + window + 1 %}
+                    <li><span class="{{ link_class }} text-gray-400">&hellip;</span></li>
+                {% endif %}
+            {% endfor %}
+
+            <li>
+                {% if page < pages %}
+                    <a href="{{ base_url }}?page={{ page + 1 }}" rel="next" class="{{ link_class }} text-gray-600 hover:bg-gray-100">Next &rarr;</a>
+                {% else %}
+                    <span class="{{ link_class }} text-gray-300">Next &rarr;</span>
+                {% endif %}
+            </li>
+        </ul>
+    {% endif %}
+</nav>

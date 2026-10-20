@@ -3,3 +3,4 @@ vendor
 src/cache/**
 node_modules
 .env
+cache/doctrine/

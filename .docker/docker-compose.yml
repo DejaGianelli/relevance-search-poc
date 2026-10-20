@@ -73,9 +73,11 @@ services:
       - elastic
 
   app:
-    image: php:${PHP_VERSION:-8.3}-apache
+    build:
+      context: ./php
+      args:
+        PHP_VERSION: ${PHP_VERSION:-8.3}
     container_name: app
-    command: bash -c "a2enmod rewrite && apache2-foreground"
     environment:
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
       - DB_HOST=postgres
@@ -83,6 +85,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-app}
       - DB_USER=${POSTGRES_USER:-app}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-app}
+      - DB_DSN=postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-app}
     volumes:
       - ../:/var/www/html
       - ./apache/vhost.conf:/etc/apache2/sites-available/000-default.conf:ro

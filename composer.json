@@ -6,6 +6,7 @@
         "doctrine/orm": "^3",
         "doctrine/dbal": "^4",
         "symfony/cache": "^7",
-        "doctrine/migrations": "3.9.8"
+        "doctrine/migrations": "3.9.8",
+        "symfony/uid": "^7"
     }
 }

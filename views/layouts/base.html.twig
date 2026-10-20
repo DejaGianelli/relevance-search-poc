@@ -26,28 +26,16 @@
 
         <div class="lg:pl-64">
             <main class="px-4 py-8 sm:px-6 lg:px-8">
+                {% for flash in flashes ?? [] %}
+                    <div role="status" class="mb-4 rounded-md border px-4 py-3 text-sm {{ flash.type == 'success' ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-800' }}">
+                        {{ flash.message }}
+                    </div>
+                {% endfor %}
                 {% block content %}{% endblock %}
             </main>
         </div>
 
-        <script>
-            (function () {
-                const sidebar = document.getElementById('sidebar');
-                const backdrop = document.querySelector('[data-sidebar-backdrop]');
-                const toggles = document.querySelectorAll('[data-sidebar-toggle]');
-
-                function setOpen(open) {
-                    sidebar.classList.toggle('-translate-x-full', !open);
-                    backdrop.classList.toggle('hidden', !open);
-                    toggles.forEach((t) => t.setAttribute('aria-expanded', String(open)));
-                }
-
-                toggles.forEach((t) => t.addEventListener('click', () => {
-                    setOpen(sidebar.classList.contains('-translate-x-full'));
-                }));
-                backdrop.addEventListener('click', () => setOpen(false));
-            })();
-        </script>
+        <script src="/js/sidebar.js"></script>
         {% block scripts %}{% endblock %}
     </body>
 </html>
