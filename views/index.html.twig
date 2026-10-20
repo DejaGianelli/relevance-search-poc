@@ -1,14 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Relevance Search</title>
-        <link href="/styles.css" rel="stylesheet"/>
-    </head>
-    <body>
-        <h1 class="text-3xl font-bold underline">
-            {{ hello }} {{ world }}!!
-        </h1>
-    </body>
-</html>
+{% extends 'layouts/base.html.twig' %}
+
+{% set active_menu = 'home' %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold underline">
+        {{ hello }} {{ world }}!!
+    </h1>
+{% endblock %}

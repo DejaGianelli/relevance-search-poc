@@ -1,0 +1,30 @@
+{% set menu_items = [
+    { label: 'Home', href: '/', key: 'home' },
+] %}
+
+<aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-gray-200 bg-white transition-transform lg:translate-x-0">
+    <div class="flex h-16 items-center justify-between border-b border-gray-200 px-6">
+        <a href="/" class="text-lg font-bold">Relevance Search</a>
+        <button type="button" data-sidebar-toggle aria-controls="sidebar" class="rounded-md p-2 text-gray-600 hover:bg-gray-100 lg:hidden">
+            <span class="sr-only">Close menu</span>
+            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 py-4">
+        <ul class="space-y-1">
+            {% for item in menu_items %}
+                {% set is_active = (active_menu ?? '') == item.key %}
+                <li>
+                    <a href="{{ item.href }}"
+                       {% if is_active %}aria-current="page"{% endif %}
+                       class="block rounded-md px-3 py-2 text-sm font-medium {{ is_active ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                        {{ item.label }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</aside>

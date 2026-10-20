@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Relevance Search{% endblock %}</title>
+        <link href="/styles.css" rel="stylesheet"/>
+        {% block head %}{% endblock %}
+    </head>
+    <body class="min-h-screen bg-gray-50 text-gray-900">
+        {# Mobile top bar #}
+        <header class="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
+            <button type="button" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false" class="rounded-md p-2 text-gray-600 hover:bg-gray-100">
+                <span class="sr-only">Open menu</span>
+                <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                </svg>
+            </button>
+            <span class="font-semibold">Relevance Search</span>
+        </header>
+
+        {# Backdrop for mobile sidebar #}
+        <div data-sidebar-backdrop class="fixed inset-0 z-30 hidden bg-gray-900/50 lg:hidden"></div>
+
+        {% include 'partials/sidebar.html.twig' %}
+
+        <div class="lg:pl-64">
+            <main class="px-4 py-8 sm:px-6 lg:px-8">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        <script>
+            (function () {
+                const sidebar = document.getElementById('sidebar');
+                const backdrop = document.querySelector('[data-sidebar-backdrop]');
+                const toggles = document.querySelectorAll('[data-sidebar-toggle]');
+
+                function setOpen(open) {
+                    sidebar.classList.toggle('-translate-x-full', !open);
+                    backdrop.classList.toggle('hidden', !open);
+                    toggles.forEach((t) => t.setAttribute('aria-expanded', String(open)));
+                }
+
+                toggles.forEach((t) => t.addEventListener('click', () => {
+                    setOpen(sidebar.classList.contains('-translate-x-full'));
+                }));
+                backdrop.addEventListener('click', () => setOpen(false));
+            })();
+        </script>
+        {% block scripts %}{% endblock %}
+    </body>
+</html>
