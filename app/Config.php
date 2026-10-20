@@ -23,6 +23,10 @@ class Config
         return self::$flattened;
     }
 
+    public static function get(string $key) {
+        return self::$flattened[$key];
+    }
+
     private function path(mixed $node, string $path)
     {
         if (!is_array($node)) {

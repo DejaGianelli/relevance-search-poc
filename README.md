@@ -22,5 +22,15 @@ composer update
 npm install
 
 # Run Tailwind CLI
-npx @tailwindcss/cli -i ./src/css/input.css -o ./src/css/styles.css --watch
+npx @tailwindcss/cli -i ./css/style.css -o ./public/styles.css --watch
+```
+
+## Migrations
+
+```shell
+# To generate a migration
+./vendor/bin/doctrine-migrations generate
+
+# Run migrations
+ ./vendor/bin/doctrine-migrations migrate --all-or-nothing
 ```

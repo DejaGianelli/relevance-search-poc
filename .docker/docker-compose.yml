@@ -53,26 +53,52 @@ services:
     networks:
       - elastic
 
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-17}-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-app}
+      - POSTGRES_USER=${POSTGRES_USER:-app}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-app}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - elastic
+
   app:
     image: php:${PHP_VERSION:-8.3}-apache
     container_name: app
     command: bash -c "a2enmod rewrite && apache2-foreground"
     environment:
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-app}
+      - DB_USER=${POSTGRES_USER:-app}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-app}
     volumes:
-      - ../src:/var/www/html
-      - ../.env:/var/www/html/.env
-      - ../vendor:/var/www/vendor
+      - ../:/var/www/html
+      - ./apache/vhost.conf:/etc/apache2/sites-available/000-default.conf:ro
     ports:
       - "${APP_PORT:-8080}:80"
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - elastic
 
 volumes:
   esdata:
+  pgdata:
 
 networks:
   elastic:

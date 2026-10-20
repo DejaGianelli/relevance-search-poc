@@ -1,8 +1,12 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
+$basedir = dirname(__DIR__);
+
+require $basedir . '/vendor/autoload.php';
 
 use App\Config;
 use App\Controller\HomeController;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Tools\DsnParser;
 use Dotenv\Dotenv;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
@@ -14,7 +18,7 @@ use Twig\Loader\FilesystemLoader;
 // Register Autoloader for application files following PSR-4
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
-    $base_dir = __DIR__ . '/';
+    $base_dir = dirname(__DIR__) . '/app/';
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
         return;
@@ -27,18 +31,24 @@ spl_autoload_register(function ($class) {
 });
 
 // Reserved global functions
-require __DIR__ . '/functions.php';
+require $basedir . '/app/functions.php';
 
 // Load Configuration
-$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv::createImmutable($basedir);
 $dotenv->load();
 
-$appConfig = require __DIR__ . '/config/app.php';
+$appConfig = require $basedir . '/config/app.php';
+$dbConfig = require $basedir . '/config/database.php';
 
-Config::init(['app' => $appConfig]);
+Config::init(['app' => $appConfig, 'db' => $dbConfig]);
+
+// Database
+$dsnParser = new DsnParser(['postgresql' => 'pdo_pgsql']);
+$connParams = $dsnParser->parse(Config::get('db.dsn'));
+$connection = DriverManager::getConnection($connParams);
 
 // Configure Twig Engine
-$loader = new FilesystemLoader(__DIR__ . '/views');
+$loader = new FilesystemLoader($basedir . '/views');
 $twig = new Environment($loader, []);
 
 // Configure Routing
