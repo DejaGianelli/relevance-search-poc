@@ -113,8 +113,12 @@ class ProductController extends AbstractController {
             $product->updateRatingSummary($summary['average'], $summary['count']);
         });
 
-        $page = filter_var($_POST['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
-        return $this->redirect('/?page=' . $page . '#product-' . $product->getId());
+        // Back to the same search and page of the home, scrolled to the rated product
+        $query = array_filter([
+            'q' => is_string($_POST['q'] ?? null) ? trim($_POST['q']) : '',
+            'page' => filter_var($_POST['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1,
+        ]);
+        return $this->redirect('/?' . http_build_query($query) . '#product-' . $product->getId());
     }
 
     private function renderForm(?Product $product, array $values, array $errors = []): string {

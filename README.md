@@ -34,3 +34,12 @@ npx @tailwindcss/cli -i ./css/style.css -o ./public/styles.css --watch
 # Run migrations
  ./vendor/bin/doctrine-migrations migrate --all-or-nothing
 ```
+
+## Search (Elasticsearch)
+
+Products are indexed into the `products` index whenever they are created, updated (including their rating) or deleted.
+To (re)create the index from the database, e.g. on first setup or after Elasticsearch was unavailable:
+
+```shell
+docker exec app php bin/reindex-products.php
+```
