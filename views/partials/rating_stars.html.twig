@@ -1,0 +1,28 @@
+{#
+    Read-only stars filled proportionally to the average rating.
+    Expects:
+      average: average stars, or null when the product has no ratings
+      count:   number of ratings
+      size:   Tailwind size class of each star (optional, defaults to "size-4")
+#}
+{% set size = size ?? 'size-4' %}
+{% set star_path = 'M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z' %}
+
+<div class="flex items-center gap-1.5 text-sm">
+    <span class="relative inline-flex" role="img" aria-label="{{ average is not null ? 'Rated ' ~ average|number_format(1) ~ ' out of 5' : 'Not rated yet' }}">
+        <span class="flex text-gray-300">
+            {% for i in 1..5 %}<svg class="{{ size }} shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="{{ star_path }}"/></svg>{% endfor %}
+        </span>
+        {% if average is not null %}
+            <span class="absolute inset-y-0 left-0 flex overflow-hidden text-amber-400" style="width: {{ average / 5 * 100 }}%">
+                {% for i in 1..5 %}<svg class="{{ size }} shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="{{ star_path }}"/></svg>{% endfor %}
+            </span>
+        {% endif %}
+    </span>
+    {% if average is not null %}
+        <span class="font-medium tabular-nums">{{ average|number_format(1) }}</span>
+        <span class="text-gray-500">({{ count }})</span>
+    {% else %}
+        <span class="text-gray-400">No ratings</span>
+    {% endif %}
+</div>

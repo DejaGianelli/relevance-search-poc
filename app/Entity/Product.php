@@ -33,6 +33,13 @@ class Product
     #[ORM\Column]
     private bool $active;
 
+    // Denormalized from product_ratings (see ProductRatingRepository::summary) so listings don't aggregate ratings
+    #[ORM\Column(name: 'rating_average', type: Types::DECIMAL, precision: 3, scale: 2, nullable: true)]
+    private ?string $ratingAverage = null;
+
+    #[ORM\Column(name: 'rating_count')]
+    private int $ratingCount = 0;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
 
@@ -69,6 +76,12 @@ class Product
         $this->updatedAt = new \DateTimeImmutable();
     }
 
+    public function updateRatingSummary(?string $average, int $count): void
+    {
+        $this->ratingAverage = $average;
+        $this->ratingCount = $count;
+    }
+
     public function getId(): Uuid
     {
         return $this->id;
@@ -102,6 +115,16 @@ class Product
     public function isActive(): bool
     {
         return $this->active;
+    }
+
+    public function getRatingAverage(): ?string
+    {
+        return $this->ratingAverage;
+    }
+
+    public function getRatingCount(): int
+    {
+        return $this->ratingCount;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

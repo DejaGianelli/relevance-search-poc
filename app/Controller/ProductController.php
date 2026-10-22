@@ -2,6 +2,8 @@
 namespace App\Controller;
 
 use App\Entity\Product;
+use App\Entity\ProductRating;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Uid\Uuid;
@@ -16,25 +18,14 @@ class ProductController extends AbstractController {
     private const PER_PAGE = 20;
 
     public function index() {
-        $repository = $this->em->getRepository(Product::class);
-
-        $total = $repository->count([]);
-        $pages = max(1, (int) ceil($total / self::PER_PAGE));
-        $page = filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        $page = min($page ?: 1, $pages);
-
         // id (UUID v7) breaks ties between products created in the same second
-        $products = $repository->findBy([], ['createdAt' => 'DESC', 'id' => 'DESC'], self::PER_PAGE, ($page - 1) * self::PER_PAGE);
+        [$products, $pagination] = $this->paginate(
+            $this->em->getRepository(Product::class), [], ['createdAt' => 'DESC', 'id' => 'DESC'], self::PER_PAGE,
+        );
 
         return $this->render('products/index', [
             'products' => $products,
-            'pagination' => [
-                'page' => $page,
-                'pages' => $pages,
-                'total' => $total,
-                'from' => $total ? ($page - 1) * self::PER_PAGE + 1 : 0,
-                'to' => ($page - 1) * self::PER_PAGE + count($products),
-            ],
+            'pagination' => $pagination,
         ]);
     }
 
@@ -91,6 +82,39 @@ class ProductController extends AbstractController {
 
         $this->flash('success', 'Product deleted.');
         return $this->redirect('/products');
+    }
+
+    public function rate(string $id) {
+        $product = $this->find($id);
+        $stars = filter_var($_POST['stars'] ?? '', FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => ProductRating::MIN_STARS, 'max_range' => ProductRating::MAX_STARS],
+        ]);
+        if ($stars === false || !$product->isActive()) {
+            http_response_code(422);
+            return 'Invalid rating.';
+        }
+
+        // Visitors are anonymous, so each session holds one rating per product, which can be changed
+        $rater = session_id();
+        $this->em->wrapInTransaction(function () use ($product, $rater, $stars) {
+            // Serializes concurrent ratings of the same product, so the summary always includes all of them
+            $this->em->lock($product, LockMode::PESSIMISTIC_WRITE);
+
+            $ratings = $this->em->getRepository(ProductRating::class);
+            $rating = $ratings->findOneBy(['product' => $product, 'rater' => $rater]);
+            if ($rating) {
+                $rating->rate($stars);
+            } else {
+                $this->em->persist(new ProductRating($product, $rater, $stars));
+            }
+            $this->em->flush();
+
+            $summary = $ratings->summary($product);
+            $product->updateRatingSummary($summary['average'], $summary['count']);
+        });
+
+        $page = filter_var($_POST['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+        return $this->redirect('/?page=' . $page . '#product-' . $product->getId());
     }
 
     private function renderForm(?Product $product, array $values, array $errors = []): string {

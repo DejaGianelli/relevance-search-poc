@@ -25,6 +25,7 @@
                         <th class="px-4 py-3">SKU</th>
                         <th class="px-4 py-3 text-right">Price</th>
                         <th class="px-4 py-3 text-right">Stock</th>
+                        <th class="px-4 py-3">Rating</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3"><span class="sr-only">Actions</span></th>
                     </tr>
@@ -36,6 +37,9 @@
                             <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ product.sku }}</td>
                             <td class="px-4 py-3 text-right tabular-nums">{{ product.price|number_format(2) }}</td>
                             <td class="px-4 py-3 text-right tabular-nums">{{ product.stock }}</td>
+                            <td class="whitespace-nowrap px-4 py-3">
+                                {% include 'partials/rating_stars.html.twig' with { average: product.ratingAverage, count: product.ratingCount } only %}
+                            </td>
                             <td class="px-4 py-3">
                                 {% if product.active %}
                                     <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Active</span>

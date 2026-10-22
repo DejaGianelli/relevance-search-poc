@@ -80,11 +80,12 @@ $routes->add('products.create', new Route('/products/new', ['_controller' => [Pr
 $routes->add('products.store', new Route('/products', ['_controller' => [ProductController::class, 'store']], methods: ['POST']));
 $routes->add('products.edit', new Route('/products/{id}/edit', ['_controller' => [ProductController::class, 'edit']], ['id' => Requirement::UUID], methods: ['GET']));
 $routes->add('products.update', new Route('/products/{id}', ['_controller' => [ProductController::class, 'update']], ['id' => Requirement::UUID], methods: ['POST']));
+$routes->add('products.rate', new Route('/products/{id}/rate', ['_controller' => [ProductController::class, 'rate']], ['id' => Requirement::UUID], methods: ['POST']));
 $routes->add('products.delete', new Route('/products/{id}/delete', ['_controller' => [ProductController::class, 'delete']], ['id' => Requirement::UUID], methods: ['POST']));
 
 // Controller factories
 $controllers = [
-    HomeController::class => fn() => new HomeController($twig),
+    HomeController::class => fn() => new HomeController($twig, $entityManager),
     ProductController::class => fn() => new ProductController($twig, $entityManager),
 ];
 
