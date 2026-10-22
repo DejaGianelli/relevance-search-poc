@@ -1,6 +1,6 @@
 {#
     Expects:
-      pagination: { page, pages, total, from, to }
+      pagination: { page, pages, total, from, to, capped? } (capped: there are more than total items)
       base_url:   URL the "?page=N" query string is appended to
       params:     other query string parameters kept in the links (optional)
 #}
@@ -13,7 +13,7 @@
 <nav aria-label="Pagination" class="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
     <p class="text-sm text-gray-500">
         Showing <span class="font-medium text-gray-900">{{ pagination.from }}</span>–<span class="font-medium text-gray-900">{{ pagination.to }}</span>
-        of <span class="font-medium text-gray-900">{{ pagination.total }}</span>
+        of <span class="font-medium text-gray-900">{{ pagination.total|number_format }}{{ pagination.capped ?? false ? '+' }}</span>
     </p>
 
     {% if pages > 1 %}
@@ -26,7 +26,11 @@
                 {% endif %}
             </li>
 
-            {% for n in 1..pages %}
+            {# Only the first, the last and the pages around the current one, so huge page counts stay cheap #}
+            {% set from_n = max(2, page - window - 1) %}
+            {% set to_n = min(pages - 1, page + window + 1) %}
+            {% set numbers = [1]|merge(from_n <= to_n ? range(from_n, to_n) : [])|merge([pages]) %}
+            {% for n in numbers %}
                 {% if n == 1 or n == pages or (n >= page - window and n <= page + window) %}
                     <li>
                         {% if n == page %}

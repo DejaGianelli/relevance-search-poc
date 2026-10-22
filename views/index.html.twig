@@ -15,7 +15,7 @@
 
     {% if query %}
         <p class="mb-4 text-sm text-gray-600">
-            {{ pagination.total }} result{{ pagination.total != 1 ? 's' }} for <span class="font-medium text-gray-900">&ldquo;{{ query }}&rdquo;</span>,
+            {{ pagination.total|number_format }}{{ pagination.capped ? '+' }} result{{ pagination.total != 1 ? 's' }} for <span class="font-medium text-gray-900">&ldquo;{{ query }}&rdquo;</span>,
             ranked by relevance and rating.
             <a href="/" class="font-medium text-gray-900 underline">Clear search</a>
         </p>

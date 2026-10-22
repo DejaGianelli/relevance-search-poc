@@ -43,3 +43,22 @@ To (re)create the index from the database, e.g. on first setup or after Elastics
 ```shell
 docker exec app php bin/reindex-products.php
 ```
+
+## Load testing with generated products
+
+`bin/seed-products.php` generates random products (SKUs `SEED000000001`, ...) and ratings directly in Postgres, in batches.
+An interrupted run resumes after the last seeded product when run again with the same `--products`.
+Seeded products are not indexed automatically, so reindex afterwards:
+
+```shell
+# 100 million products (default), up to 10 ratings each (about 2.5 on average)
+docker exec app php bin/seed-products.php --products=100000000 --max-ratings=10
+docker exec app php bin/reindex-products.php
+
+# Remove the generated products (their ratings are deleted in cascade), then reindex
+docker exec postgres psql -U app -d app -c "DELETE FROM products WHERE sku > 'SEED' AND sku < 'SEEE'"
+```
+
+Measured locally (12 CPUs, Docker Desktop): seeding ~16k products/s (~1h45 for 100M) and indexing ~32k products/s (~52 min for 100M).
+Expect roughly 90 GB in Postgres and 21 GB in Elasticsearch for 100M products.
+

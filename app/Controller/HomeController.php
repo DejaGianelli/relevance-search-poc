@@ -38,7 +38,8 @@ class HomeController extends AbstractController {
      * Searches Elasticsearch and loads the matching products from the database, keeping the relevance order.
      */
     private function search(string $query): array {
-        $page = $this->requestedPage();
+        // Elasticsearch only pages through the first ProductIndex::MAX_RESULT_WINDOW hits
+        $page = min($this->requestedPage(), (int) ceil(ProductIndex::MAX_RESULT_WINDOW / self::PER_PAGE));
         $result = $this->productIndex->search($query, ($page - 1) * self::PER_PAGE, self::PER_PAGE);
 
         $found = $result['ids'] ? $this->em->getRepository(Product::class)->findBy(['id' => $result['ids']]) : [];
@@ -49,6 +50,9 @@ class HomeController extends AbstractController {
         // Skips products removed from the database but still in the index
         $products = array_values(array_filter(array_map(fn($id) => $byId[$id] ?? null, $result['ids'])));
 
-        return [$products, $this->pagination($page, self::PER_PAGE, $result['total'], count($products))];
+        $pagination = $this->pagination($page, self::PER_PAGE, $result['total'], count($products));
+        $pagination['capped'] = $result['capped'];
+
+        return [$products, $pagination];
     }
 }

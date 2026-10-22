@@ -9,6 +9,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'products')]
+#[ORM\Index(name: 'products_created_at_id_idx', columns: ['created_at', 'id'])]
 class Product
 {
     #[ORM\Id]

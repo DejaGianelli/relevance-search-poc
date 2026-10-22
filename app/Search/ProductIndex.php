@@ -12,6 +12,9 @@ class ProductIndex
 {
     public const NAME = 'products';
 
+    // Elasticsearch's index.max_result_window: hits beyond it can't be paged with from/size
+    public const MAX_RESULT_WINDOW = 10000;
+
     public function __construct(private Client $client) {}
 
     /**
@@ -27,6 +30,8 @@ class ProductIndex
             'index' => self::NAME,
             'body' => [
                 'settings' => [
+                    // Single node cluster: replicas would never be allocated
+                    'number_of_replicas' => 0,
                     'analysis' => [
                         'analyzer' => [
                             // Language neutral, but matches "descricao" with "Descrição"
@@ -58,6 +63,36 @@ class ProductIndex
     }
 
     /**
+     * Disables the periodic refresh, which makes indexing large amounts of documents much faster.
+     * Documents indexed meanwhile are only searchable after endBulkLoad().
+     */
+    public function beginBulkLoad(): void
+    {
+        $this->client->indices()->putSettings(['index' => self::NAME, 'body' => ['index' => ['refresh_interval' => '-1']]]);
+    }
+
+    public function endBulkLoad(): void
+    {
+        $this->client->indices()->putSettings(['index' => self::NAME, 'body' => ['index' => ['refresh_interval' => null]]]);
+        $this->client->indices()->refresh(['index' => self::NAME]);
+    }
+
+    /**
+     * Indexes products straight from database rows (with the products table columns), skipping the ORM.
+     *
+     * @param array<array<string, mixed>> $rows
+     */
+    public function indexRows(array $rows): void
+    {
+        $body = [];
+        foreach ($rows as $row) {
+            $body[] = ['index' => ['_index' => self::NAME, '_id' => $row['id']]];
+            $body[] = $this->document($row);
+        }
+        $this->bulk($body);
+    }
+
+    /**
      * Indexes (creating or replacing) and deletes products in a single bulk request.
      *
      * @param Product[] $save
@@ -69,11 +104,19 @@ class ProductIndex
         $body = [];
         foreach ($save as $product) {
             $body[] = ['index' => ['_index' => self::NAME, '_id' => $product->getId()->toRfc4122()]];
-            $body[] = $this->document($product);
+            $body[] = $this->document($this->row($product));
         }
         foreach ($delete as $id) {
             $body[] = ['delete' => ['_index' => self::NAME, '_id' => $id]];
         }
+        $this->bulk($body);
+    }
+
+    /**
+     * @throws \RuntimeException when Elasticsearch rejects any of the operations
+     */
+    private function bulk(array $body): void
+    {
         if (!$body) {
             return;
         }
@@ -96,15 +139,24 @@ class ProductIndex
      * 3 times a match in the description. The text relevance is multiplied
      * by a factor that grows with the average rating, so better rated products rank higher.
      *
-     * @return array{ids: string[], total: int} ids ordered by relevance and the total of matches
+     * Only the first MAX_RESULT_WINDOW hits can be fetched, and matches are counted up to that number.
+     *
+     * @return array{ids: string[], total: int, capped: bool} ids ordered by relevance, the total of
+     *     matches and whether there are more matches than the total
      */
     public function search(string $query, int $from, int $size): array
     {
+        $size = max(0, min($size, self::MAX_RESULT_WINDOW - $from));
+        if ($size === 0) {
+            return ['ids' => [], 'total' => 0, 'capped' => false];
+        }
+
         $response = $this->client->search([
             'index' => self::NAME,
             'body' => [
                 'from' => $from,
                 'size' => $size,
+                'track_total_hits' => self::MAX_RESULT_WINDOW,
                 '_source' => false,
                 'query' => [
                     'function_score' => [
@@ -135,22 +187,43 @@ class ProductIndex
         return [
             'ids' => array_column($response['hits']['hits'], '_id'),
             'total' => $response['hits']['total']['value'],
+            'capped' => $response['hits']['total']['relation'] === 'gte',
         ];
     }
 
-    private function document(Product $product): array
+    /**
+     * The product as a row of the products table, so entities and rows share document().
+     */
+    private function row(Product $product): array
     {
         return [
             'name' => $product->getName(),
             'sku' => $product->getSku(),
             'description' => $product->getDescription(),
-            'price' => (float) $product->getPrice(),
+            'price' => $product->getPrice(),
             'stock' => $product->getStock(),
             'active' => $product->isActive(),
-            'rating_average' => $product->getRatingAverage() === null ? null : (float) $product->getRatingAverage(),
+            'rating_average' => $product->getRatingAverage(),
             'rating_count' => $product->getRatingCount(),
-            'created_at' => $product->getCreatedAt()->format(DATE_ATOM),
-            'updated_at' => $product->getUpdatedAt()->format(DATE_ATOM),
+            'created_at' => $product->getCreatedAt()->format('Y-m-d H:i:s'),
+            'updated_at' => $product->getUpdatedAt()->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function document(array $row): array
+    {
+        return [
+            'name' => $row['name'],
+            'sku' => $row['sku'],
+            'description' => $row['description'],
+            'price' => (float) $row['price'],
+            'stock' => (int) $row['stock'],
+            'active' => (bool) $row['active'],
+            'rating_average' => $row['rating_average'] === null ? null : (float) $row['rating_average'],
+            'rating_count' => (int) $row['rating_count'],
+            // Timestamps are stored without time zone, in UTC
+            'created_at' => str_replace(' ', 'T', $row['created_at']),
+            'updated_at' => str_replace(' ', 'T', $row['updated_at']),
         ];
     }
 }
